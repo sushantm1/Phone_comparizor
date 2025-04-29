@@ -1,24 +1,4 @@
 import pandas as pd
-import numpy as np
-# phone1_model_data=
-# phone2_model_data=None
-def first_brand(first_phone_name):
-    if first_phone_name in brand_names.values:
-        # print(data)
-        pass
-    else:
-        print("Brand not found. Please check your input.")
-        first_phone_name = input("Enter the first company name: ").lower()
-        first_brand(first_phone_name)
-
-def sec_brand_name(sec_phone_name):
-    if sec_phone_name in brand_names.values:
-    # print(data)
-        pass
-    else:
-        print("Brand not found. Please check your input.")
-        sec_phone_name = input("Enter the second company name: ").lower()
-        sec_brand_name(sec_phone_name)
 
 # Load and clean data
 data = pd.read_csv('smartphones.csv')
@@ -29,39 +9,55 @@ data['brand_name'] = data['brand_name'].str.lower()
 
 # Get unique brand names
 brand_names = data['brand_name'].drop_duplicates().reset_index(drop=True)
-print("Available brands:\n", brand_names)
+print("Available brands:\n")
+for brand in brand_names:
+    print("-", brand)
 
-# Input first brand from user
-first_phone_name = input("Enter the first company name: ").lower()
-first_brand(first_phone_name)
+# Function to get a valid brand name from user
+def get_valid_brand(prompt):
+    while True:
+        brand = input(prompt).lower()
+        if brand in brand_names.values:
+            return brand
+        print("Brand not found. Please check your input.")
+
+# Function to get a valid model index from user
+def get_model_index(models, prompt):
+    while True:
+        try:
+            index = int(input(prompt))
+            if 0 <= index < len(models):
+                return index
+            else:
+                print("Invalid index. Please select from the available models.")
+        except ValueError:
+            print("Please enter a valid number.")
+
+# Function to show available models for a brand
+def display_models(model_data):
+    print("Available models:")
+    for i, model in enumerate(model_data['model']):
+        print(f"{i}: {model}")
+
+# Get first brand and model
+first_phone_name = get_valid_brand("Enter the first company name: ")
 phone1_model_data = data[data['brand_name'] == first_phone_name].reset_index(drop=True)
-print("Available models from", first_phone_name, ":\n", phone1_model_data['model'])
-# Filter models by brand
-index_of_model1 = int(input("Enter the index of the model 1 : "))
+display_models(phone1_model_data)
+index_of_model1 = get_model_index(phone1_model_data['model'], "Enter the index of the model 1: ")
+phone_specs1 = phone1_model_data.iloc[[index_of_model1]]
 
-# Input second brand from user
-sec_phone_name = input("Enter the second company name: ").lower()
-sec_brand_name(sec_phone_name)
+# Get second brand and model
+sec_phone_name = get_valid_brand("Enter the second company name: ")
 phone2_model_data = data[data['brand_name'] == sec_phone_name].reset_index(drop=True)
-print("Available models from", sec_phone_name, ":\n", phone2_model_data['model'])
+display_models(phone2_model_data)
+index_of_model2 = get_model_index(phone2_model_data['model'], "Enter the index of the model 2: ")
+phone_specs2 = phone2_model_data.iloc[[index_of_model2]]
 
-index_of_model2 = int(input("Enter the index of the model 2 : "))
+# Display specs
+print("\nSpecifications for Model 1:")
+for col in phone_specs1.columns:
+    print(f"{col} : {phone_specs1.iloc[0][col]}")
 
-phone_sepcs1=data.loc[(data['brand_name']==first_phone_name) & (data['model'] == phone1_model_data['model'][index_of_model1])].reset_index(drop=True)
-phone_sepcs2=data.loc[(data['brand_name']==sec_phone_name) & (data['model'] == phone2_model_data['model'][index_of_model2])].reset_index(drop=True)
-
-# print(phone_sepcs1['model'].to_string(index=False, header=False))
-# print(phone_sepcs2['model'].to_string(index=False, header=False))
-
-for i in phone_sepcs1:
-    print(i, " : ", phone_sepcs1[i][0])
-
-print("\n\n")
-for i in phone_sepcs2:
-    print(i, " : ", phone_sepcs2[i][0])
-
-# def to():
-#     return phone1_model_data, phone2_model_data
-
-
-
+print("\nSpecifications for Model 2:")
+for col in phone_specs2.columns:
+    print(f"{col} : {phone_specs2.iloc[0][col]}")

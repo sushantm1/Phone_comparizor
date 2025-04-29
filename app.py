@@ -1,115 +1,143 @@
+import os
+import math
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
-import math
-
 from google import genai
+
+# Setup
+genai_api_key = os.getenv("GENAI_API_KEY") or "your_fallback_key_here"
 client = genai.Client(api_key="")
-from main import phone_sepcs1, phone_sepcs2
 
-phone1=phone_sepcs1['model'].to_string(index=False,header=False)
-phone2=phone_sepcs2['model'].to_string(index=False,header=False)
+# Loading and Prepare Data
+data = pd.read_csv('smartphones.csv').drop_duplicates()
+data['brand_name'] = data['brand_name'].str.lower()
+brand_names = data['brand_name'].drop_duplicates().reset_index(drop=True)
 
-# Input text to generate a review
-# input_text = (f"iphone 16 vs samsung s23, which is best.\n")
-input_text = (
-    f"Write a detailed comparison between the {phone1} and {phone2} behave as like i made this AI comparision model and make it concise and short and remove the conversation line, just give me the comparison.\n"
-)
-print('\n')
-# Generate text
-print("Generated Review:")
+# helper functions
+def get_valid_brand(prompt):
+    while True:
+        brand = input(prompt).lower()
+        if brand in brand_names.values:
+            return brand
+        print(" Brand not found. Try again.")
 
-response = client.models.generate_content(
-    model="gemini-2.0-flash",
-    contents=input_text,
-)
-print(response.text)
+def get_model_index(models, prompt):
+    while True:
+        try:
+            index = int(input(prompt))
+            if 0 <= index < len(models):
+                return index
+            else:
+                print("Invalid index. Try again.")
+        except ValueError:
+            print("Enter a valid number.")
 
+def display_models(df):
+    for i, model in enumerate(df['model']):
+        print(f"{i}: {model}")
 
+def extract_specs(df):
+    def safe_get(column): return int(float(pd.to_numeric(df[column].iloc[0], errors='coerce') or 0))
+    return {
+        'price': safe_get('price'),
+        'cores': safe_get('num_cores'),
+        'battery': safe_get('battery_capacity'),
+        'ram': safe_get('ram_capacity'),
+        'internal_memory': safe_get('internal_memory'),
+        'screen_size': safe_get('screen_size'),
+        'primary_camera': safe_get('primary_camera_rear')
+    }
 
-column1 = phone_sepcs1['model'].to_string(index=False, header=False)
-column2 = phone_sepcs2['model'].to_string(index=False, header=False)
-
-category = ['Model 1', 'Model 2']
-
-# Convert extracted values to numeric types and replace NaN with 0
-price1 = int(float(pd.to_numeric(phone_sepcs1['price'].to_string(index=False, header=False).strip(), errors='coerce') or 0))
-price2 = int(float(pd.to_numeric(phone_sepcs2['price'].to_string(index=False, header=False).strip(), errors='coerce') or 0))
-
-num_cores1 = int(float(pd.to_numeric(phone_sepcs1['num_cores'].to_string(index=False, header=False).strip(), errors='coerce') or 0))
-num_cores2 = int(float(pd.to_numeric(phone_sepcs2['num_cores'].to_string(index=False, header=False).strip(), errors='coerce') or 0))
-
-battery1 = int(pd.to_numeric(phone_sepcs1['battery_capacity'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-battery2 = int(pd.to_numeric(phone_sepcs2['battery_capacity'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-
-ram1 = int(pd.to_numeric(phone_sepcs1['ram_capacity'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-ram2 = int(pd.to_numeric(phone_sepcs2['ram_capacity'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-
-internal_memory1 = int(pd.to_numeric(phone_sepcs1['internal_memory'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-internal_memory2 = int(pd.to_numeric(phone_sepcs2['internal_memory'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-
-screen_size1 = int(float(pd.to_numeric(phone_sepcs1['screen_size'].to_string(index=False, header=False).strip(), errors='coerce') or 0))
-screen_size2 = int(float(pd.to_numeric(phone_sepcs2['screen_size'].to_string(index=False, header=False).strip(), errors='coerce') or 0))
-
-primary_camera1 = int(pd.to_numeric(phone_sepcs1['primary_camera_rear'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-primary_camera2 = int(pd.to_numeric(phone_sepcs2['primary_camera_rear'].to_string(index=False, header=False).strip(), errors='coerce') or 0)
-
-# Sample data
-data = {
-    'Category': ['price', 'cores', 'battery', 'ram', 'internal_memory', 'screenSize', 'primary_camera'],
-    column1: [price1, num_cores1, battery1, ram1, internal_memory1, screen_size1, primary_camera1],
-    column2: [price2, num_cores2, battery2, ram2, internal_memory2, screen_size2, primary_camera2],
-}
-
-# Create DataFrame
-df = pd.DataFrame(data)
-
-# Melt the DataFrame to long-form for seaborn
-df_melted = df.melt(id_vars='Category', var_name='Columns', value_name='Values')
-
-# Create subplots
-categories = df['Category']
-
-# Calculate the number of rows and columns for a square grid
-num_categories = len(categories)
-grid_size = math.ceil(math.sqrt(num_categories))  # Square grid dimensions
-
-# Create subplots
-fig, axes = plt.subplots(nrows=grid_size, ncols=grid_size, figsize=(15, 15), constrained_layout=True)
-
-# Flatten the axes array for easier indexing
-axes = axes.flatten()
-
-# Plot each category in its respective subplot
-for i, category in enumerate(categories):
-    ax = axes[i]
-    barplot = sns.barplot(
-        x='Columns',
-        y='Values',
-        data=df_melted[df_melted['Category'] == category],
-        ax=ax
+def generate_ai_comparison(model1, model2):
+    input_text = (
+        f"Write a detailed comparison between the {model1} and {model2}. "
+        f"Behave like I built this AI-based comparison model. Make it concise, direct, and avoid conversational lines."
     )
-    ax.set_title(f'Comparison for {category}')
-    ax.set_xlabel('Models')
-    ax.set_ylabel('Values')
+    print("\n AI Comparison:\n")
+    response = client.models.generate_content(model="gemini-2.0-flash", contents=input_text)
+    print(response.text)
 
-    # Add value labels to the bars
-    for bar in barplot.patches:
-        bar_height = bar.get_height()
-        if not pd.isna(bar_height):  # Ensure the value is not NaN
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,  # X-coordinate (center of the bar)
-                bar_height,  # Y-coordinate (height of the bar)
-                f'{int(bar_height)}',  # Label text
-                ha='center',  # Horizontal alignment
-                va='bottom',  # Vertical alignment
-                fontsize=10,  # Font size
-                color='black'  # Label color
-            )
+def plot_bar_charts(specs1, specs2, label1, label2):
+    data = {
+        'Category': list(specs1.keys()),
+        label1: list(specs1.values()),
+        label2: list(specs2.values())
+    }
+    df = pd.DataFrame(data)
+    df_melted = df.melt(id_vars='Category', var_name='Phone', value_name='Value')
 
-# Hide any unused subplots
-for j in range(i + 1, len(axes)):
-    axes[j].axis('off')
+    num_categories = len(df['Category'])
+    grid_size = math.ceil(math.sqrt(num_categories))
+    fig, axes = plt.subplots(nrows=grid_size, ncols=grid_size, figsize=(15, 15), constrained_layout=True)
+    axes = axes.flatten()
 
-# Show plot
-plt.show()
+    for i, category in enumerate(df['Category']):
+        ax = axes[i]
+        plot = sns.barplot(x='Phone', y='Value', data=df_melted[df_melted['Category'] == category], ax=ax)
+        ax.set_title(category.capitalize())
+        for bar in plot.patches:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2, height, f'{int(height)}', ha='center', va='bottom')
+    for j in range(i + 1, len(axes)):
+        axes[j].axis('off')
+    plt.show()
+
+def plot_radar_chart(specs1, specs2, label1, label2):
+    import numpy as np
+
+    categories = list(specs1.keys())
+    values1 = np.array(list(specs1.values()), dtype=float)
+    values2 = np.array(list(specs2.values()), dtype=float)
+
+    values1_norm = values1 / values1.max()
+    values2_norm = values2 / values2.max()
+
+    values1 = list(values1_norm) + [values1_norm[0]]
+    values2 = list(values2_norm) + [values2_norm[0]]
+    categories += [categories[0]]
+    angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+    ax.plot(angles, values1, label=label1, linewidth=2)
+    ax.fill(angles, values1, alpha=0.25)
+    ax.plot(angles, values2, label=label2, linewidth=2)
+    ax.fill(angles, values2, alpha=0.25)
+
+    ax.set_thetagrids(np.degrees(angles[:-1]), categories)
+    ax.set_title(" Radar Comparison")
+    ax.legend()
+    plt.show()
+
+# Main Flow
+print("Available brands:")
+for brand in brand_names:
+    print("-", brand)
+
+# Select phone 1
+brand1 = get_valid_brand("Enter first brand: ")
+models1 = data[data['brand_name'] == brand1].reset_index(drop=True)
+display_models(models1)
+idx1 = get_model_index(models1['model'], "Enter index for model 1: ")
+phone1 = models1.iloc[[idx1]]
+label1 = phone1['model'].iloc[0]
+
+# Select phone 2
+brand2 = get_valid_brand("Enter second brand: ")
+models2 = data[data['brand_name'] == brand2].reset_index(drop=True)
+display_models(models2)
+idx2 = get_model_index(models2['model'], "Enter index for model 2: ")
+phone2 = models2.iloc[[idx2]]
+label2 = phone2['model'].iloc[0]
+
+# Compare specs
+specs1 = extract_specs(phone1)
+specs2 = extract_specs(phone2)
+
+# Show AI Review
+generate_ai_comparison(label1, label2)
+
+# Plot graphs
+plot_bar_charts(specs1, specs2, label1, label2)
+plot_radar_chart(specs1, specs2, label1, label2)
