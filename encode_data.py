@@ -1,6 +1,6 @@
 # import google
 from google import genai
-client = genai.Client(api_key="")
+client = genai.Client(api_key="AIzaSyDDBoJswO854qU88dSbdd0zpfi_Z1K0pLk")
 
 from main import phone_sepcs1, phone_sepcs2
 phone1=phone_sepcs1['model'].to_string(index=False,header=False)
