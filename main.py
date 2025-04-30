@@ -1,19 +1,16 @@
 import pandas as pd
 
-# Load and clean data
+# loading the data
 data = pd.read_csv('smartphones.csv')
 data = data.drop_duplicates()
-
-# Standardize brand names to lowercase
 data['brand_name'] = data['brand_name'].str.lower()
 
-# Get unique brand names
 brand_names = data['brand_name'].drop_duplicates().reset_index(drop=True)
 print("Available brands:\n")
 for brand in brand_names:
     print("-", brand)
 
-# Function to get a valid brand name from user
+# Function to get a valid brand name from user  
 def get_valid_brand(prompt):
     while True:
         brand = input(prompt).lower()
@@ -21,7 +18,7 @@ def get_valid_brand(prompt):
             return brand
         print("Brand not found. Please check your input.")
 
-# Function to get a valid model index from user
+# model index function
 def get_model_index(models, prompt):
     while True:
         try:
@@ -33,7 +30,7 @@ def get_model_index(models, prompt):
         except ValueError:
             print("Please enter a valid number.")
 
-# Function to show available models for a brand
+# Function to show available models 
 def display_models(model_data):
     print("Available models:")
     for i, model in enumerate(model_data['model']):
@@ -53,11 +50,12 @@ display_models(phone2_model_data)
 index_of_model2 = get_model_index(phone2_model_data['model'], "Enter the index of the model 2: ")
 phone_specs2 = phone2_model_data.iloc[[index_of_model2]]
 
-# Display specs
+# Display specs of phone1
 print("\nSpecifications for Model 1:")
 for col in phone_specs1.columns:
     print(f"{col} : {phone_specs1.iloc[0][col]}")
 
+# Display specs of phone1
 print("\nSpecifications for Model 2:")
 for col in phone_specs2.columns:
     print(f"{col} : {phone_specs2.iloc[0][col]}")

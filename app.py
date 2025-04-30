@@ -1,15 +1,14 @@
-import os
+# import os
 import math
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from google import genai
 
-# Setup
-genai_api_key = os.getenv("GENAI_API_KEY") or "your_fallback_key_here"
+# genai_api_key = os.getenv("GENAI_API_KEY") or "your_fallback_key_here"
 client = genai.Client(api_key="")
 
-# Loading and Prepare Data
+# Loading Data
 data = pd.read_csv('smartphones.csv').drop_duplicates()
 data['brand_name'] = data['brand_name'].str.lower()
 brand_names = data['brand_name'].drop_duplicates().reset_index(drop=True)
